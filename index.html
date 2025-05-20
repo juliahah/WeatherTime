@@ -17,6 +17,7 @@
       height: 100vh;
       overflow: hidden;
       text-align: center;
+      background: white;
     }
 
     .glow {
@@ -25,7 +26,6 @@
       text-shadow: 0 0 10px #00eaff, 0 0 20px #00eaff, 0 0 40px #00eaff;
       margin-bottom: 20px;
     }
-
 
     .weather-box h2 {
       margin: 0;
@@ -55,20 +55,23 @@
     setInterval(updateTime, 1000);
     updateTime();
 
-    // Weather by geolocation
-    function fetchWeatherByLocation(lat, lon) {
-      const url = `https://wttr.in/${lat},${lon}?format=j1`;
+    // Get city via IP and fetch weather
+    function getWeatherByCity(city) {
+      const url = `https://wttr.in/${encodeURIComponent(city)}?format=j1`;
       fetch(url)
         .then(response => response.json())
         .then(data => {
           const current = data.current_condition[0];
           const area = data.nearest_area[0].areaName[0].value;
+          const region = data.nearest_area[0].region[0].value;
+          const country = data.nearest_area[0].country[0].value;
+
           const weatherEl = document.getElementById('weather');
           weatherEl.innerHTML = `
-            <h2>${area}</h2>
+            <h2>${area}, ${region}, ${country}</h2>
             <p>${current.weatherDesc[0].value}</p>
-            <p> ${current.temp_C}°C</p>
-            <p> Wind: ${current.windspeedKmph} km/h</p>
+            <p>${current.temp_C}°C</p>
+            <p>Wind: ${current.windspeedKmph} km/h</p>
           `;
         })
         .catch(err => {
@@ -76,24 +79,19 @@
         });
     }
 
-    function getLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          position => {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-            fetchWeatherByLocation(lat, lon);
-          },
-          error => {
-            document.getElementById('weather').innerHTML = "<h2>Location access denied</h2>";
-          }
-        );
-      } else {
-        document.getElementById('weather').innerHTML = "<h2>Geolocation not supported</h2>";
-      }
+    function fetchCityFromIP() {
+      fetch('https://ipapi.co/json')
+        .then(response => response.json())
+        .then(data => {
+          const city = data.city || 'Paris'; // fallback
+          getWeatherByCity(city);
+        })
+        .catch(err => {
+          getWeatherByCity('Paris'); // fallback on error
+        });
     }
 
-    getLocation();
+    fetchCityFromIP();
   </script>
 </body>
 </html>
